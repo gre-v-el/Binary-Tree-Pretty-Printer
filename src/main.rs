@@ -67,8 +67,8 @@ impl<T> Tree<T> where T : PartialOrd + Display {
 		if self.nodes.len() == 0 { " (empty) ".to_owned() }
 		else {
 			let mut vis = Vec::new();
-			self.append_to_visual(0, &mut vis, 0, 0, None);
-			println!("{:#?}", vis);
+			let mut levels = HashSet::new();
+			self.append_to_visual(0, &mut vis, 0, 0, None, &mut levels);
 
 			let mut str = String::new();
 
@@ -94,21 +94,54 @@ impl<T> Tree<T> where T : PartialOrd + Display {
 
 	}
 
-	pub fn append_to_visual(&self, node: usize, visual: &mut Vec<String>, index: usize, depth: usize, side: Option<bool>) {
-		const size: usize = 2;
+	pub fn append_to_visual(&self, node: usize, visual: &mut Vec<String>, index: usize, depth: usize, is_right: Option<bool>, levels: &mut HashSet<usize>) {
+		const SIZE: usize = 1;
 		
-		let symbol = if let Some(side) = side {
+		let symbol = if let Some(side) = is_right {
 			if side { FULL_BOX[0][2] }
 			else { FULL_BOX[0][0] }
 		}
-		else {" "};
+		else {""};
 
-		visual.insert(index, format!("{}{}{}{}", "o", VERTICAL_LINE.repeat(if side.is_some() {size-1} else {0}), symbol, " ".repeat((depth+1)*size+1-size)));
+		let mut space = String::new();
+		// for i in (0..depth).rev() {
+		// 	if levels.contains(&i) {
+		// 		space.push_str(HORIZONTAL_LINE);
+		// 		space.push_str(" ".repeat(SIZE.max(1)-1).as_str());
+		// 	}
+		// 	else {
+		// 		space.push_str(" ".repeat(SIZE).as_str());
+		// 	}
+		// }
+		for i in 0..(depth.max(1)-1) {
+			if levels.contains(&i) {
+				space.push_str(HORIZONTAL_LINE);
+				space.push_str(" ".repeat(SIZE.max(1)-1).as_str());
+			}
+			else {
+				space.push_str(" ".repeat(SIZE).as_str());
+			}
+		}
+		space = space.chars().rev().collect();
+
+		visual.insert(index, format!("{}{}{}{}", "o", VERTICAL_LINE.repeat(if is_right.is_some() {SIZE-1} else {0}), symbol, space));
 		if let Some(right) = self.nodes[node].right {
-			self.append_to_visual(right, visual, index+1, depth+1, Some(true));
+			if let Some(false) = is_right {
+				levels.insert(depth-1);
+			}
+			self.append_to_visual(right, visual, index+1, depth+1, Some(true), levels);
+			if let Some(false) = is_right {
+				levels.remove(&(depth-1));
+			}
 		}
 		if let Some(left) = self.nodes[node].left {
-			self.append_to_visual(left, visual, index, depth+1, Some(false));
+			if let Some(true) = is_right {
+				levels.insert(depth-1);
+			}
+			self.append_to_visual(left, visual, index, depth+1, Some(false), levels);
+			if let Some(true) = is_right {
+				levels.remove(&(depth-1));
+			}
 		}
 	}
 
@@ -134,7 +167,6 @@ impl<T> Tree<T> where T : PartialOrd + Display {
 			else {
 				s.push_str(" ".repeat(SIZE).as_str());
 			}
-			
 		}
 
 		if let Some(left) = self.nodes[node].left {
@@ -203,6 +235,7 @@ fn main() {
 
 
     println!("{}", tree.as_string());
+    println!("{}", tree.as_visual());
 	println!("{}", "\n".repeat(3));
     println!("{}", tree.as_inorder_string());
 }
