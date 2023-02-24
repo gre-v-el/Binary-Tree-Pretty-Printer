@@ -72,7 +72,6 @@ impl<T> Tree<T> where T : PartialOrd + Display {
 
 			let mut str = String::new();
 
-			let mut r = 0;
 			let mut all_nones = false;
 			while !all_nones {
 				all_nones = true;
@@ -84,7 +83,6 @@ impl<T> Tree<T> where T : PartialOrd + Display {
 					else {
 						str.push(' ');
 					}
-					r += 1;
 				}
 				str.push('\n');
 			}
@@ -115,12 +113,24 @@ impl<T> Tree<T> where T : PartialOrd + Display {
 		}
 		space = space.chars().rev().collect();
 
-		visual.insert(index, format!("{}{}{}{}", "o", VERTICAL_LINE.repeat(if is_right.is_some() {SIZE-1} else {0}), symbol, space));
+		let mut text = format!("{}", self.nodes[node].value);
+		let len = text.len();
+		let left_symbols = len/2;
+		let right_symbols = len-1-left_symbols;
+
+		for _ in 0..right_symbols {
+			visual.insert(index, format!("{}{}{}{}", text.pop().unwrap(), " ".repeat(if is_right.is_some() {SIZE-1} else {0}), " ".repeat(if is_right.is_none() {0} else {1}), space));
+		}
+		visual.insert(index, format!("{}{}{}{}", text.pop().unwrap(), VERTICAL_LINE.repeat(if is_right.is_some() {SIZE-1} else {0}), symbol, space));
+		for _ in 0..left_symbols {
+			visual.insert(index, format!("{}{}{}{}", text.pop().unwrap(), " ".repeat(if is_right.is_some() {SIZE-1} else {0}), " ".repeat(if is_right.is_none() {0} else {1}), space));
+		}
+
 		if let Some(right) = self.nodes[node].right {
 			if let Some(false) = is_right {
 				levels.insert(depth-1);
 			}
-			self.append_to_visual(right, visual, index+1, depth+1, Some(true), levels);
+			self.append_to_visual(right, visual, index+len, depth+1, Some(true), levels);
 			if let Some(false) = is_right {
 				levels.remove(&(depth-1));
 			}
@@ -222,9 +232,9 @@ impl<T> Tree<T> where T : PartialOrd + Display {
 }
 
 fn main() {
-	let mut tree: Tree<u8> = Tree::new();
+	let mut tree: Tree<u16> = Tree::new();
 
-	for i in 0..50 {
+	for i in 0..30 {
 		tree.insert(rand::random());
 	}
 
