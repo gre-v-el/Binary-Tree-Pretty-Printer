@@ -95,7 +95,7 @@ impl<T> Tree<T> where T : PartialOrd + Display {
 	}
 
 	pub fn append_to_visual(&self, node: usize, visual: &mut Vec<String>, index: usize, depth: usize, is_right: Option<bool>, levels: &mut HashSet<usize>) {
-		const SIZE: usize = 1;
+		const SIZE: usize = 2;
 		
 		let symbol = if let Some(side) = is_right {
 			if side { FULL_BOX[0][2] }
@@ -104,15 +104,6 @@ impl<T> Tree<T> where T : PartialOrd + Display {
 		else {""};
 
 		let mut space = String::new();
-		// for i in (0..depth).rev() {
-		// 	if levels.contains(&i) {
-		// 		space.push_str(HORIZONTAL_LINE);
-		// 		space.push_str(" ".repeat(SIZE.max(1)-1).as_str());
-		// 	}
-		// 	else {
-		// 		space.push_str(" ".repeat(SIZE).as_str());
-		// 	}
-		// }
 		for i in 0..(depth.max(1)-1) {
 			if levels.contains(&i) {
 				space.push_str(HORIZONTAL_LINE);
@@ -148,56 +139,61 @@ impl<T> Tree<T> where T : PartialOrd + Display {
 	pub fn as_string(&self) -> String {
 		if self.nodes.len() == 0 { "(empty)".into() }
 		else { 
-			let mut levels = HashSet::new();
+			let mut prefix = "".into();
 			let mut str = String::new();
-			self.append_to_string(0, &mut str, 0, None, &mut levels);
+			self.append_to_string(0, &mut str, 0, None, &mut prefix);
 			str
 		}
 	}
 
-	fn append_to_string(&self, node: usize, str: &mut String, depth: usize, is_right: Option<bool>, levels: &mut HashSet<usize>) {
+	fn append_to_string(&self, node: usize, str: &mut String, depth: usize, is_right: Option<bool>, prefix: &mut String) {
 		const SIZE: usize = 5;
-	
-		let mut s = String::new();
-		for i in 0..(depth.max(1)-1) {
-			if levels.contains(&i) {
-				s.push_str(VERTICAL_LINE);
-				s.push_str(" ".repeat(SIZE.max(1)-1).as_str());
-			}
-			else {
-				s.push_str(" ".repeat(SIZE).as_str());
-			}
-		}
 
 		if let Some(left) = self.nodes[node].left {
 			if let Some(true) = is_right {
-				levels.insert(depth-1);
-			}
-			self.append_to_string(left, str, depth+1, Some(false), levels);
-			if let Some(true) = is_right {
-				levels.remove(&(depth-1));
-			}
-		}
-
-		if let Some(is_right) = is_right {
-			if is_right {
-				s.push_str(FULL_BOX[2][0]);
+				prefix.push_str(VERTICAL_LINE);
+				prefix.push_str(" ".repeat(SIZE-1).as_str());
 			}
 			else {
-				s.push_str(FULL_BOX[0][0]);
+				prefix.push_str(" ".repeat(SIZE).as_str());
 			}
-			s.push_str(HORIZONTAL_LINE.repeat(SIZE.max(1) - 1).as_str());
+			self.append_to_string(left, str, depth+1, Some(false), prefix);
+			
+			for _ in 0..SIZE {
+				prefix.pop();
+			}
+			
 		}
-		str.push_str(format!("\n{s}<{}>", self.nodes[node].value).as_str());
+
+		let mut symbol = 
+		if let Some(is_right) = is_right {
+			if is_right {
+				FULL_BOX[2][0].to_owned()
+			}
+			else {
+				FULL_BOX[0][0].to_owned()
+			}
+		}
+		else {
+			" ".to_owned()
+		};
+		symbol.push_str(HORIZONTAL_LINE.repeat(SIZE - 1).as_str());
+		str.push_str(format!("\n{prefix}{symbol}<{}>", self.nodes[node].value).as_str());
 
 		if let Some(right) = self.nodes[node].right {
 			if let Some(false) = is_right {
-				levels.insert(depth-1);
+				prefix.push_str(VERTICAL_LINE);
+				prefix.push_str(" ".repeat(SIZE-1).as_str());
 			}
-			self.append_to_string(right, str, depth+1, Some(true), levels);
-			if let Some(false) = is_right {
-				levels.remove(&(depth-1));
+			else {
+				prefix.push_str(" ".repeat(SIZE).as_str());
 			}
+			self.append_to_string(right, str, depth+1, Some(true), prefix);
+			
+			for _ in 0..SIZE {
+				prefix.pop();
+			}
+			
 		}
 	}
 
