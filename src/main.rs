@@ -119,11 +119,23 @@ impl<T> Tree<T> where T : PartialOrd + Display {
 		let right_symbols = len-1-left_symbols;
 
 		for _ in 0..right_symbols {
-			visual.insert(index, format!("{}{}{}{}", text.pop().unwrap(), " ".repeat(if is_right.is_some() {SIZE-1} else {0}), " ".repeat(if is_right.is_none() {0} else {1}), space));
+			if let Some(false) = is_right {
+				visual.insert(index, format!("{}{}{}{}", text.pop().unwrap(), " ".repeat(if is_right.is_some() {SIZE-1} else {0}), HORIZONTAL_LINE, space));
+			}
+			else {
+				visual.insert(index, format!("{}{}{}{}", text.pop().unwrap(), " ".repeat(if is_right.is_some() {SIZE-1} else {0}), " ".repeat(if is_right.is_none() {0} else {1}), space));
+			}
+			
 		}
 		visual.insert(index, format!("{}{}{}{}", text.pop().unwrap(), VERTICAL_LINE.repeat(if is_right.is_some() {SIZE-1} else {0}), symbol, space));
+
 		for _ in 0..left_symbols {
-			visual.insert(index, format!("{}{}{}{}", text.pop().unwrap(), " ".repeat(if is_right.is_some() {SIZE-1} else {0}), " ".repeat(if is_right.is_none() {0} else {1}), space));
+			if let Some(true) = is_right {
+				visual.insert(index, format!("{}{}{}{}", text.pop().unwrap(), " ".repeat(if is_right.is_some() {SIZE-1} else {0}), HORIZONTAL_LINE, space));
+			}
+			else {
+				visual.insert(index, format!("{}{}{}{}", text.pop().unwrap(), " ".repeat(if is_right.is_some() {SIZE-1} else {0}), " ".repeat(if is_right.is_none() {0} else {1}), space));
+			}
 		}
 
 		if let Some(right) = self.nodes[node].right {
@@ -188,7 +200,7 @@ impl<T> Tree<T> where T : PartialOrd + Display {
 			" ".to_owned()
 		};
 		symbol.push_str(HORIZONTAL_LINE.repeat(SIZE - 1).as_str());
-		str.push_str(format!("\n{prefix}{symbol}<{}>", self.nodes[node].value).as_str());
+		str.push_str(format!("\n{prefix}{symbol}{}", self.nodes[node].value).as_str());
 
 		if let Some(right) = self.nodes[node].right {
 			if let Some(false) = is_right {
@@ -234,13 +246,12 @@ impl<T> Tree<T> where T : PartialOrd + Display {
 fn main() {
 	let mut tree: Tree<u16> = Tree::new();
 
-	for i in 0..30 {
+	for _ in 0..30 {
 		tree.insert(rand::random());
 	}
 
-
-
     println!("{}", tree.as_string());
+	println!("{}", "\n".repeat(3));
     println!("{}", tree.as_visual());
 	println!("{}", "\n".repeat(3));
     println!("{}", tree.as_inorder_string());
