@@ -60,8 +60,12 @@ impl<T> Tree<T> where T : PartialOrd + Display {
 		if self.nodes.len() == 0 { " (empty) ".to_owned() }
 		else {
 			let mut vis = Vec::new();
-			let mut levels = HashSet::new();
-			self.append_to_visual(0, &mut vis, 0, 0, None, &mut levels);
+			let mut prefix = "".into();
+			self.append_to_visual(0, &mut vis, 0, 0, None, &mut prefix);
+
+			vis = vis.into_iter().map(|s| // TODO: figure out how to not reverse it, but iterate from the end in the loop
+				s.chars().rev().collect()
+			).collect();
 
 			let mut str = String::new();
 
@@ -85,7 +89,7 @@ impl<T> Tree<T> where T : PartialOrd + Display {
 
 	}
 
-	pub fn append_to_visual(&self, node: usize, visual: &mut Vec<String>, index: usize, depth: usize, is_right: Option<bool>, levels: &mut HashSet<usize>) {
+	pub fn append_to_visual(&self, node: usize, visual: &mut Vec<String>, index: usize, depth: usize, is_right: Option<bool>, prefix: &mut String) {
 		const SIZE: usize = 2;
 		
 		let symbol = if let Some(side) = is_right {
@@ -94,18 +98,6 @@ impl<T> Tree<T> where T : PartialOrd + Display {
 		}
 		else {""};
 
-		let mut space = String::new();
-		for i in 0..(depth.max(1)-1) {
-			if levels.contains(&i) {
-				space.push_str(HORIZONTAL_LINE);
-				space.push_str(" ".repeat(SIZE.max(1)-1).as_str());
-			}
-			else {
-				space.push_str(" ".repeat(SIZE).as_str());
-			}
-		}
-		space = space.chars().rev().collect();
-
 		let mut text = format!("{}", self.nodes[node].value);
 		let len = text.len();
 		let left_symbols = len/2;
@@ -113,40 +105,51 @@ impl<T> Tree<T> where T : PartialOrd + Display {
 
 		for _ in 0..right_symbols {
 			if let Some(false) = is_right {
-				visual.insert(index, format!("{}{}{}{}", text.pop().unwrap(), " ".repeat(if is_right.is_some() {SIZE-1} else {0}), HORIZONTAL_LINE, space));
+				visual.insert(index, format!("{}{}{}{}", prefix, HORIZONTAL_LINE, " ".repeat(if is_right.is_some() {SIZE-1} else {0}), text.pop().unwrap()));
 			}
 			else {
-				visual.insert(index, format!("{}{}{}{}", text.pop().unwrap(), " ".repeat(if is_right.is_some() {SIZE-1} else {0}), " ".repeat(if is_right.is_none() {0} else {1}), space));
+				visual.insert(index, format!("{}{}{}{}", prefix, " ".repeat(if is_right.is_none() {2} else {1}), " ".repeat(if is_right.is_some() {SIZE-1} else {0}), text.pop().unwrap()));
 			}
 			
 		}
-		visual.insert(index, format!("{}{}{}{}", text.pop().unwrap(), VERTICAL_LINE.repeat(if is_right.is_some() {SIZE-1} else {0}), symbol, space));
+		visual.insert(index, format!("{}{}{}{}", prefix, symbol, VERTICAL_LINE.repeat(if is_right.is_some() {SIZE-1} else {SIZE}), text.pop().unwrap()));
 
 		for _ in 0..left_symbols {
 			if let Some(true) = is_right {
-				visual.insert(index, format!("{}{}{}{}", text.pop().unwrap(), " ".repeat(if is_right.is_some() {SIZE-1} else {0}), HORIZONTAL_LINE, space));
+				visual.insert(index, format!("{}{}{}{}", prefix, HORIZONTAL_LINE, " ".repeat(if is_right.is_some() {SIZE-1} else {0}), text.pop().unwrap()));
 			}
 			else {
-				visual.insert(index, format!("{}{}{}{}", text.pop().unwrap(), " ".repeat(if is_right.is_some() {SIZE-1} else {0}), " ".repeat(if is_right.is_none() {0} else {1}), space));
+				visual.insert(index, format!("{}{}{}{}", prefix, " ".repeat(if is_right.is_none() {2} else {1}), " ".repeat(if is_right.is_some() {SIZE-1} else {0}), text.pop().unwrap()));
 			}
 		}
 
+
 		if let Some(right) = self.nodes[node].right {
 			if let Some(false) = is_right {
-				levels.insert(depth-1);
+				// insert into the front, not to the end
+				
+				prefix.push_str(HORIZONTAL_LINE);
+				prefix.push_str(" ".repeat(SIZE-1).as_str());
 			}
-			self.append_to_visual(right, visual, index+len, depth+1, Some(true), levels);
-			if let Some(false) = is_right {
-				levels.remove(&(depth-1));
+			else {
+				prefix.push_str(" ".repeat(SIZE).as_str());
+			}
+			self.append_to_visual(right, visual, index+len, depth+1, Some(true), prefix);
+			for _ in 0..SIZE {
+				prefix.pop();
 			}
 		}
 		if let Some(left) = self.nodes[node].left {
 			if let Some(true) = is_right {
-				levels.insert(depth-1);
+				prefix.push_str(HORIZONTAL_LINE);
+				prefix.push_str(" ".repeat(SIZE-1).as_str());
 			}
-			self.append_to_visual(left, visual, index, depth+1, Some(false), levels);
-			if let Some(true) = is_right {
-				levels.remove(&(depth-1));
+			else {
+				prefix.push_str(" ".repeat(SIZE).as_str());
+			}
+			self.append_to_visual(left, visual, index, depth+1, Some(false), prefix);
+			for _ in 0..SIZE {
+				prefix.pop();
 			}
 		}
 	}
@@ -177,7 +180,6 @@ impl<T> Tree<T> where T : PartialOrd + Display {
 			for _ in 0..SIZE {
 				prefix.pop();
 			}
-			
 		}
 
 		let mut symbol = 
@@ -208,7 +210,6 @@ impl<T> Tree<T> where T : PartialOrd + Display {
 			for _ in 0..SIZE {
 				prefix.pop();
 			}
-			
 		}
 	}
 

@@ -1,6 +1,6 @@
-mod tree;
+mod bstree;
 
-use tree::Tree;
+use bstree::Tree;
 
 const FULL_BOX: [[&str; 3]; 3] = [
 	["\u{250F}", "\u{2533}", "\u{2513}"],
