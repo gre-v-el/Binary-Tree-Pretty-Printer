@@ -1,25 +1,25 @@
-use std::{fmt::Display, collections::HashSet};
+use std::fmt::Display;
 
 use crate::{FULL_BOX, HORIZONTAL_LINE, VERTICAL_LINE};
 
-struct Node<T> {
+struct BSNode<T> {
 	left: Option<usize>,
 	right: Option<usize>,
 	value: T,
 }
 
-impl<T> Node<T> where T : PartialOrd {
+impl<T> BSNode<T> where T : PartialOrd {
 	pub fn new(v: T) -> Self {
 		Self { left: None, right: None, value: v }
 	}
 
 }
 
-pub struct Tree<T> {
-	nodes: Vec<Node<T>>,
+pub struct BSTree<T> {
+	nodes: Vec<BSNode<T>>,
 }
 
-impl<T> Tree<T> where T : PartialOrd + Display {
+impl<T> BSTree<T> where T : PartialOrd + Display {
 	pub fn new() -> Self {
 		Self{
 			nodes: Vec::new(),
@@ -28,7 +28,7 @@ impl<T> Tree<T> where T : PartialOrd + Display {
 
 	pub fn insert(&mut self, v: T) {
 		if self.nodes.len() == 0 {
-			self.nodes.push(Node::new(v));
+			self.nodes.push(BSNode::new(v));
 		}
 		else {
 			self.insert_into_node(0, v);
@@ -42,7 +42,7 @@ impl<T> Tree<T> where T : PartialOrd + Display {
 			}
 			else {
 				self.nodes[node].right = Some(self.nodes.len());
-				self.nodes.push(Node::new(v));
+				self.nodes.push(BSNode::new(v));
 			}
 		}
 		else {
@@ -51,7 +51,7 @@ impl<T> Tree<T> where T : PartialOrd + Display {
 			}
 			else {
 				self.nodes[node].left = Some(self.nodes.len());
-				self.nodes.push(Node::new(v));
+				self.nodes.push(BSNode::new(v));
 			}
 		}
 	}
@@ -68,6 +68,8 @@ impl<T> Tree<T> where T : PartialOrd + Display {
 			).collect();
 
 			let mut str = String::new();
+
+			
 
 			let mut all_nones = false;
 			while !all_nones {
@@ -126,8 +128,6 @@ impl<T> Tree<T> where T : PartialOrd + Display {
 
 		if let Some(right) = self.nodes[node].right {
 			if let Some(false) = is_right {
-				// insert into the front, not to the end
-				
 				prefix.push_str(HORIZONTAL_LINE);
 				prefix.push_str(" ".repeat(SIZE-1).as_str());
 			}
