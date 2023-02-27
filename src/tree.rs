@@ -3,25 +3,26 @@ use std::{fmt::Display, error::Error, mem::replace};
 use crate::{FULL_BOX, HORIZONTAL_LINE, VERTICAL_LINE};
 
 #[derive(Debug)]
-pub struct NodeIndexError {
+pub struct NodeIndexError<'a> {
+	thing: &'a str, // TODO: rethink naming
 	given: usize,
 	allowed: usize,
 }
 
-impl NodeIndexError {
-	pub fn new(given: usize, allowed: usize) -> Self {
+impl<'a> NodeIndexError<'a> {
+	pub fn new(thing: &'a str, given: usize, allowed: usize) -> Self {
 		Self {
-			given, allowed
+			thing, given, allowed
 		}
 	}
 }
 
-impl Display for NodeIndexError {
+impl<'a> Display for NodeIndexError<'a> {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        Display::fmt(format!("Node index {} outside bounds [0-{})", self.given, self.allowed).as_str(), f)
+        Display::fmt(format!("{} index {} outside bounds [0-{})", self.thing, self.given, self.allowed).as_str(), f)
 	}
 }
-impl Error for NodeIndexError {}
+impl<'a> Error for NodeIndexError<'a> {}
 
 #[derive(PartialEq, PartialOrd)]
 enum NodePosition {
@@ -53,17 +54,17 @@ struct Node<T> {
 	value: T,
 }
 
-impl<T> Node<T> where T : PartialOrd {
+impl<T> Node<T> {
 	pub fn new(v: T) -> Self {
 		Self { children: Vec::new(), value: v }
 	}
 }
 
-pub struct Tree<T> {
+pub struct Tree<T> where T : Display {
 	nodes: Vec<Node<T>>,
 }
 
-impl<T> Tree<T> where T : PartialOrd + Display {
+impl<T> Tree<T> where T : Display {
 	pub fn new() -> Self {
 		Self{
 			nodes: Vec::new(),
@@ -90,7 +91,7 @@ impl<T> Tree<T> where T : PartialOrd + Display {
 		}
 	}
 
-	pub fn insert_into_node(&mut self, node: usize, v: T) -> Result<usize, NodeIndexError> {
+	pub fn add_child(&mut self, node: usize, v: T) -> Result<usize, NodeIndexError> {
 		let new_index = self.nodes_count();
 		
 		match self.nodes.get_mut(node) {
@@ -100,10 +101,37 @@ impl<T> Tree<T> where T : PartialOrd + Display {
 				Ok(new_index)
 			}
 			None => {
-				Err(NodeIndexError::new(node, self.nodes_count()))
+				Err(NodeIndexError::new("Node", node, new_index))
 			}
 		}
+	}
 
+	pub fn add_child_position(&mut self, node: usize, v: T, pos: usize) -> Result<usize, NodeIndexError> {
+		let new_index = self.nodes_count();
+		
+		match self.nodes.get_mut(node) {
+			Some(node) => {
+				if pos <= node.children.len() {
+					node.children.insert(pos, new_index);
+					self.nodes.push(Node::new(v));
+					Ok(new_index)
+				}
+				else {
+					Err(NodeIndexError::new("Child", pos, node.children.len()))
+				}
+			}
+			None => {
+				Err(NodeIndexError::new("Node", node, new_index))
+			}
+		}
+	}
+
+	pub fn get_node_value(&self, index: usize) -> Option<&T> {
+		Some(&self.nodes.get(index)?.value)
+	}
+
+	pub fn get_node_children(&self, index: usize) -> Option<&Vec<usize>> {
+		Some(&self.nodes.get(index)?.children)
 	}
 
 	pub fn vertical_string(&self) -> String {
@@ -163,7 +191,6 @@ impl<T> Tree<T> where T : PartialOrd + Display {
 			else {
 				visual.insert(index, format!("{}{}{}{}", prefix, " ".repeat(if position == NodePosition::Root {2} else {1}), " ".repeat(if position != NodePosition::Root {SIZE-1} else {0}), text.pop().unwrap()));
 			}
-			
 		}
 		visual.insert(index, format!("{}{}{}{}", prefix, symbol, VERTICAL_LINE.repeat(SIZE-1), text.pop().unwrap()));
 
