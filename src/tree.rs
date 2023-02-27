@@ -60,103 +60,107 @@ impl<T> Tree<T> where T : PartialOrd + Display {
 		self.nodes.push(Node::new(v));
 	}
 
-	// pub fn as_visual(&self) -> String {
-	// 	if self.nodes.len() == 0 { " (empty) ".to_owned() }
-	// 	else {
-	// 		let mut vis = Vec::new();
-	// 		let mut prefix = "".into();
-	// 		self.append_to_visual(0, &mut vis, 0, 0, None, &mut prefix);
+	pub fn as_visual(&self) -> String {
+		if self.nodes.len() == 0 { " (empty) ".to_owned() }
+		else {
+			let mut vis = Vec::new();
+			let mut prefix = "".into();
+			self.append_to_visual(0, &mut vis, 0, NodePosition::Root, &mut prefix);
 
-	// 		vis = vis.into_iter().map(|s| // TODO: figure out how to not reverse it, but iterate from the end in the loop
-	// 			s.chars().rev().collect()
-	// 		).collect();
+			vis = vis.into_iter().map(|s| // TODO: figure out how to not reverse it, but iterate from the end in the loop
+				s.chars().rev().collect()
+			).collect();
 
-	// 		let mut str = String::new();
+			let mut str = String::new();
 
 			
+			let mut all_nones = false;
+			while !all_nones {
+				all_nones = true;
+				for c in &mut vis {
+					if let Some(ch) = c.pop() {
+						str.push(ch);
+						all_nones = false;
+					}
+					else {
+						str.push(' ');
+					}
+				}
+				str.push('\n');
+			}
 
-	// 		let mut all_nones = false;
-	// 		while !all_nones {
-	// 			all_nones = true;
-	// 			for c in &mut vis {
-	// 				if let Some(ch) = c.pop() {
-	// 					str.push(ch);
-	// 					all_nones = false;
-	// 				}
-	// 				else {
-	// 					str.push(' ');
-	// 				}
-	// 			}
-	// 			str.push('\n');
-	// 		}
+			str
+		}
 
-	// 		str
-	// 	}
+	}
 
-	// }
-
-	// pub fn append_to_visual(&self, node: usize, visual: &mut Vec<String>, index: usize, depth: usize, is_right: Option<bool>, prefix: &mut String) {
-	// 	const SIZE: usize = 2;
+	fn append_to_visual(&self, node: usize, visual: &mut Vec<String>, index: usize, position: NodePosition, prefix: &mut String) {
+		const SIZE: usize = 2;
 		
-	// 	let symbol = if let Some(side) = is_right {
-	// 		if side { FULL_BOX[0][2] }
-	// 		else { FULL_BOX[0][0] }
-	// 	}
-	// 	else {""};
+		let symbol =
+			match position {
+				NodePosition::RightExtreme => FULL_BOX[0][0].to_owned(),
+				NodePosition::LeftExtreme => FULL_BOX[0][2].to_owned(),
+				NodePosition::Root => " ".to_owned(),
+				_ => FULL_BOX[0][1].to_owned(),
+			};
 
-	// 	let mut text = format!("{}", self.nodes[node].value);
-	// 	let len = text.len();
-	// 	let left_symbols = len/2;
-	// 	let right_symbols = len-1-left_symbols;
+		let mut text = format!("<{}>", self.nodes[node].value);
+		let len = text.len();
+		let left_symbols = len/2;
+		let right_symbols = len-1-left_symbols;
 
-	// 	for _ in 0..right_symbols {
-	// 		if let Some(false) = is_right {
-	// 			visual.insert(index, format!("{}{}{}{}", prefix, HORIZONTAL_LINE, " ".repeat(if is_right.is_some() {SIZE-1} else {0}), text.pop().unwrap()));
-	// 		}
-	// 		else {
-	// 			visual.insert(index, format!("{}{}{}{}", prefix, " ".repeat(if is_right.is_none() {2} else {1}), " ".repeat(if is_right.is_some() {SIZE-1} else {0}), text.pop().unwrap()));
-	// 		}
+		for _ in 0..right_symbols {
+			if position != NodePosition::LeftExtreme && position != NodePosition::Root {
+				visual.insert(index, format!("{}{}{}{}", prefix, HORIZONTAL_LINE, " ".repeat(SIZE-1), text.pop().unwrap()));
+			}
+			else {
+				visual.insert(index, format!("{}{}{}{}", prefix, " ".repeat(if position == NodePosition::Root {2} else {1}), " ".repeat(if position != NodePosition::Root {SIZE-1} else {0}), text.pop().unwrap()));
+			}
 			
-	// 	}
-	// 	visual.insert(index, format!("{}{}{}{}", prefix, symbol, VERTICAL_LINE.repeat(if is_right.is_some() {SIZE-1} else {SIZE}), text.pop().unwrap()));
+		}
+		visual.insert(index, format!("{}{}{}{}", prefix, symbol, VERTICAL_LINE.repeat(SIZE-1), text.pop().unwrap()));
 
-	// 	for _ in 0..left_symbols {
-	// 		if let Some(true) = is_right {
-	// 			visual.insert(index, format!("{}{}{}{}", prefix, HORIZONTAL_LINE, " ".repeat(if is_right.is_some() {SIZE-1} else {0}), text.pop().unwrap()));
-	// 		}
-	// 		else {
-	// 			visual.insert(index, format!("{}{}{}{}", prefix, " ".repeat(if is_right.is_none() {2} else {1}), " ".repeat(if is_right.is_some() {SIZE-1} else {0}), text.pop().unwrap()));
-	// 		}
-	// 	}
+		for _ in 0..left_symbols {
+			if position != NodePosition::RightExtreme && position != NodePosition::Root {
+				visual.insert(index, format!("{}{}{}{}", prefix, HORIZONTAL_LINE, " ".repeat(SIZE-1), text.pop().unwrap()));
+			}
+			else {
+				visual.insert(index, format!("{}{}{}{}", prefix, " ".repeat(if position == NodePosition::Root {2} else {1}), " ".repeat(if position != NodePosition::Root {SIZE-1} else {0}), text.pop().unwrap()));
+			}
+		}
 
+		let children = self.nodes[node].children.len();
+		let left = children/2;
+		
+		if position != NodePosition::LeftExtreme && position != NodePosition::Root {
+			prefix.push_str(HORIZONTAL_LINE);
+			prefix.push_str(" ".repeat(SIZE-1).as_str());
+		}
+		else {
+			prefix.push_str(" ".repeat(SIZE).as_str());
+		}
+		for i in 0..left {
+			self.append_to_visual(self.nodes[node].children[i], visual, index+len, NodePosition::left(i==0), prefix);
+		}
+		for _ in 0..SIZE {
+			prefix.pop();
+		}
 
-	// 	if let Some(right) = self.nodes[node].right {
-	// 		if let Some(false) = is_right {
-	// 			prefix.push_str(HORIZONTAL_LINE);
-	// 			prefix.push_str(" ".repeat(SIZE-1).as_str());
-	// 		}
-	// 		else {
-	// 			prefix.push_str(" ".repeat(SIZE).as_str());
-	// 		}
-	// 		self.append_to_visual(right, visual, index+len, depth+1, Some(true), prefix);
-	// 		for _ in 0..SIZE {
-	// 			prefix.pop();
-	// 		}
-	// 	}
-	// 	if let Some(left) = self.nodes[node].left {
-	// 		if let Some(true) = is_right {
-	// 			prefix.push_str(HORIZONTAL_LINE);
-	// 			prefix.push_str(" ".repeat(SIZE-1).as_str());
-	// 		}
-	// 		else {
-	// 			prefix.push_str(" ".repeat(SIZE).as_str());
-	// 		}
-	// 		self.append_to_visual(left, visual, index, depth+1, Some(false), prefix);
-	// 		for _ in 0..SIZE {
-	// 			prefix.pop();
-	// 		}
-	// 	}
-	// }
+		if position != NodePosition::RightExtreme && position != NodePosition::Root {
+			prefix.push_str(HORIZONTAL_LINE);
+			prefix.push_str(" ".repeat(SIZE-1).as_str());
+		}
+		else {
+			prefix.push_str(" ".repeat(SIZE).as_str());
+		}
+		for i in left..children {
+			self.append_to_visual(self.nodes[node].children[i], visual, index, NodePosition::right(i==children-1), prefix);
+		}
+		for _ in 0..SIZE {
+			prefix.pop();
+		}
+	}
 
 	pub fn as_string(&self) -> String {
 		if self.nodes.len() == 0 { "(empty)".into() }

@@ -59,5 +59,6 @@ fn main() {
 	tree.insert_into_node(9, 28);
 
 	println!("{}", tree.as_string());
+	println!("{}", tree.as_visual());
 
 }
