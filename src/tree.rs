@@ -2,6 +2,7 @@ use std::fmt::Display;
 
 use crate::{FULL_BOX, HORIZONTAL_LINE, VERTICAL_LINE};
 
+
 struct Node<T> {
 	children: Vec<usize>,
 	value: T,
@@ -138,25 +139,26 @@ impl<T> Tree<T> where T : PartialOrd + Display {
 		else { 
 			let mut prefix = "".into();
 			let mut str = String::new();
-			self.append_to_string(0, &mut str, 0, None, &mut prefix);
+			self.append_to_string(0, &mut str, 0, [true, false], &mut prefix);
 			str
 		}
 	}
 
-	fn append_to_string(&self, node: usize, str: &mut String, depth: usize, is_right: Option<bool>, prefix: &mut String) {
+	// position: [is_right, is_extreme]
+	fn append_to_string(&self, node: usize, str: &mut String, depth: usize, position: [bool; 2], prefix: &mut String) {
 		const SIZE: usize = 5;
 
 		let before = self.nodes[node].children.len()/2;
 
 		for i in 0..before {
-			if let Some(true) = is_right {
+			if position != [false, true] {
 				prefix.push_str(VERTICAL_LINE);
 				prefix.push_str(" ".repeat(SIZE-1).as_str());
 			}
 			else {
 				prefix.push_str(" ".repeat(SIZE).as_str());
 			}
-			self.append_to_string(self.nodes[node].children[i], str, depth+1, Some(false), prefix);
+			self.append_to_string(self.nodes[node].children[i], str, depth+1, if i == 0 {[false, true]} else {[false, false]}, prefix);
 			
 			for _ in 0..SIZE {
 				prefix.pop();
@@ -164,30 +166,24 @@ impl<T> Tree<T> where T : PartialOrd + Display {
 		}
 
 		let mut symbol = 
-		if let Some(is_right) = is_right {
-			if is_right {
-				FULL_BOX[2][0].to_owned()
-			}
-			else {
-				FULL_BOX[0][0].to_owned()
-			}
-		}
-		else {
-			" ".to_owned()
-		};
+			match position {
+				[true, true] => FULL_BOX[2][0].to_owned(),
+				[false, true] => FULL_BOX[0][0].to_owned(),
+				[_, false] => FULL_BOX[1][0].to_owned(),
+			};
 		symbol.push_str(HORIZONTAL_LINE.repeat(SIZE - 1).as_str());
 		str.push_str(format!("\n{prefix}{symbol}{}", self.nodes[node].value).as_str());
 
 
 		for i in before..self.nodes[node].children.len() {
-			if let Some(false) = is_right {
+			if position != [true, true] {
 				prefix.push_str(VERTICAL_LINE);
 				prefix.push_str(" ".repeat(SIZE-1).as_str());
 			}
 			else {
 				prefix.push_str(" ".repeat(SIZE).as_str());
 			}
-			self.append_to_string(self.nodes[node].children[i], str, depth+1, Some(true), prefix);
+			self.append_to_string(self.nodes[node].children[i], str, depth+1, if i == self.nodes[node].children.len() - 1 {[true, true]} else {[true, false]}, prefix);
 			
 			for _ in 0..SIZE {
 				prefix.pop();
