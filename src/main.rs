@@ -27,8 +27,7 @@ fn main() {
     // println!("{}", tree.as_inorder_string());
 
 
-	let mut tree: Tree<u16> = Tree::new();
-	tree.insert_into_node(0, 0);
+	let mut tree: Tree<u16> = Tree::with_root(0);
 	tree.insert_into_node(0, 1);
 	tree.insert_into_node(0, 2);
 	tree.insert_into_node(0, 3);
@@ -58,7 +57,7 @@ fn main() {
 	tree.insert_into_node(8, 27);
 	tree.insert_into_node(9, 28);
 
-	println!("{}", tree.as_string());
-	println!("{}", tree.as_visual());
+	println!("{}", tree.horizontal_string());
+	println!("{}", tree.vertical_string());
 
 }

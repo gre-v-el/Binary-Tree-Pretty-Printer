@@ -1,6 +1,27 @@
-use std::fmt::Display;
+use std::{fmt::Display, error::Error, mem::replace};
 
 use crate::{FULL_BOX, HORIZONTAL_LINE, VERTICAL_LINE};
+
+#[derive(Debug)]
+pub struct NodeIndexError {
+	given: usize,
+	allowed: usize,
+}
+
+impl NodeIndexError {
+	pub fn new(given: usize, allowed: usize) -> Self {
+		Self {
+			given, allowed
+		}
+	}
+}
+
+impl Display for NodeIndexError {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        Display::fmt(format!("Node index {} outside bounds [0-{})", self.given, self.allowed).as_str(), f)
+	}
+}
+impl Error for NodeIndexError {}
 
 #[derive(PartialEq, PartialOrd)]
 enum NodePosition {
@@ -36,7 +57,6 @@ impl<T> Node<T> where T : PartialOrd {
 	pub fn new(v: T) -> Self {
 		Self { children: Vec::new(), value: v }
 	}
-
 }
 
 pub struct Tree<T> {
@@ -50,22 +70,48 @@ impl<T> Tree<T> where T : PartialOrd + Display {
 		}
 	}
 
-	pub fn insert_into_node(&mut self, node: usize, v: T) {
-		let count = self.nodes.len();
-
-		if count != 0 { // TODO: rethink it
-			self.nodes[node].children.push(count);
+	pub fn with_root(v: T) -> Self {
+		Self{
+			nodes: vec![Node::new(v)],
 		}
-
-		self.nodes.push(Node::new(v));
 	}
 
-	pub fn as_visual(&self) -> String {
+	pub fn nodes_count(&self) -> usize {
+		self.nodes.len()
+	}
+
+	pub fn set_root(&mut self, v: T) -> Option<T> {
+		if self.nodes.len() == 0 {
+			self.nodes.push(Node::new(v));
+			None
+		}
+		else {
+			Some(replace(&mut self.nodes[0], Node::new(v)).value)
+		}
+	}
+
+	pub fn insert_into_node(&mut self, node: usize, v: T) -> Result<usize, NodeIndexError> {
+		let new_index = self.nodes_count();
+		
+		match self.nodes.get_mut(node) {
+			Some(node) => {
+				node.children.push(new_index);
+				self.nodes.push(Node::new(v));
+				Ok(new_index)
+			}
+			None => {
+				Err(NodeIndexError::new(node, self.nodes_count()))
+			}
+		}
+
+	}
+
+	pub fn vertical_string(&self) -> String {
 		if self.nodes.len() == 0 { " (empty) ".to_owned() }
 		else {
 			let mut vis = Vec::new();
 			let mut prefix = "".into();
-			self.append_to_visual(0, &mut vis, 0, NodePosition::Root, &mut prefix);
+			self.vertical_recursive(0, &mut vis, 0, NodePosition::Root, &mut prefix);
 
 			vis = vis.into_iter().map(|s| // TODO: figure out how to not reverse it, but iterate from the end in the loop
 				s.chars().rev().collect()
@@ -94,7 +140,7 @@ impl<T> Tree<T> where T : PartialOrd + Display {
 
 	}
 
-	fn append_to_visual(&self, node: usize, visual: &mut Vec<String>, index: usize, position: NodePosition, prefix: &mut String) {
+	fn vertical_recursive(&self, node: usize, visual: &mut Vec<String>, index: usize, position: NodePosition, prefix: &mut String) {
 		const SIZE: usize = 2;
 		
 		let symbol =
@@ -141,7 +187,7 @@ impl<T> Tree<T> where T : PartialOrd + Display {
 			prefix.push_str(" ".repeat(SIZE).as_str());
 		}
 		for i in 0..left {
-			self.append_to_visual(self.nodes[node].children[i], visual, index+len, NodePosition::left(i==0), prefix);
+			self.vertical_recursive(self.nodes[node].children[i], visual, index+len, NodePosition::left(i==0), prefix);
 		}
 		for _ in 0..SIZE {
 			prefix.pop();
@@ -155,24 +201,24 @@ impl<T> Tree<T> where T : PartialOrd + Display {
 			prefix.push_str(" ".repeat(SIZE).as_str());
 		}
 		for i in left..children {
-			self.append_to_visual(self.nodes[node].children[i], visual, index, NodePosition::right(i==children-1), prefix);
+			self.vertical_recursive(self.nodes[node].children[i], visual, index, NodePosition::right(i==children-1), prefix);
 		}
 		for _ in 0..SIZE {
 			prefix.pop();
 		}
 	}
 
-	pub fn as_string(&self) -> String {
+	pub fn horizontal_string(&self) -> String {
 		if self.nodes.len() == 0 { "(empty)".into() }
 		else { 
 			let mut prefix = "".into();
 			let mut str = String::new();
-			self.append_to_string(0, &mut str, NodePosition::Root, &mut prefix);
+			self.horizontal_recursive(0, &mut str, NodePosition::Root, &mut prefix);
 			str
 		}
 	}
 
-	fn append_to_string(&self, node: usize, str: &mut String, position: NodePosition, prefix: &mut String) {
+	fn horizontal_recursive(&self, node: usize, str: &mut String, position: NodePosition, prefix: &mut String) {
 		const SIZE: usize = 5;
 
 		let before = self.nodes[node].children.len()/2;
@@ -185,7 +231,7 @@ impl<T> Tree<T> where T : PartialOrd + Display {
 			prefix.push_str(" ".repeat(SIZE).as_str());
 		}
 		for i in 0..before {
-			self.append_to_string(self.nodes[node].children[i], str, NodePosition::left(i==0), prefix);
+			self.horizontal_recursive(self.nodes[node].children[i], str, NodePosition::left(i==0), prefix);
 		}
 		for _ in 0..SIZE {
 			prefix.pop();
@@ -210,7 +256,7 @@ impl<T> Tree<T> where T : PartialOrd + Display {
 			prefix.push_str(" ".repeat(SIZE).as_str());
 		}
 		for i in before..self.nodes[node].children.len() {
-			self.append_to_string(self.nodes[node].children[i], str, NodePosition::right(i == self.nodes[node].children.len() - 1), prefix);
+			self.horizontal_recursive(self.nodes[node].children[i], str, NodePosition::right(i == self.nodes[node].children.len() - 1), prefix);
 		}
 		for _ in 0..SIZE {
 			prefix.pop();
