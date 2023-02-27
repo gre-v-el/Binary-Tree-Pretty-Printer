@@ -11,6 +11,22 @@ enum NodePosition {
 	Root,
 }
 
+impl NodePosition {
+	pub fn left(extreme: bool) -> Self {
+		match extreme {
+			true => Self::LeftExtreme,
+			false => Self::Left
+		}
+	}
+
+	pub fn right(extreme: bool) -> Self {
+		match extreme {
+			true => Self::RightExtreme,
+			false => Self::Right
+		}
+	}
+}
+
 struct Node<T> {
 	children: Vec<usize>,
 	value: T,
@@ -147,29 +163,28 @@ impl<T> Tree<T> where T : PartialOrd + Display {
 		else { 
 			let mut prefix = "".into();
 			let mut str = String::new();
-			self.append_to_string(0, &mut str, 0, NodePosition::Root, &mut prefix);
+			self.append_to_string(0, &mut str, NodePosition::Root, &mut prefix);
 			str
 		}
 	}
 
-	fn append_to_string(&self, node: usize, str: &mut String, depth: usize, position: NodePosition, prefix: &mut String) {
+	fn append_to_string(&self, node: usize, str: &mut String, position: NodePosition, prefix: &mut String) {
 		const SIZE: usize = 5;
 
 		let before = self.nodes[node].children.len()/2;
 
+		if position != NodePosition::LeftExtreme && position != NodePosition::Root {
+			prefix.push_str(VERTICAL_LINE);
+			prefix.push_str(" ".repeat(SIZE-1).as_str());
+		}
+		else {
+			prefix.push_str(" ".repeat(SIZE).as_str());
+		}
 		for i in 0..before {
-			if position != NodePosition::LeftExtreme && position != NodePosition::Root {
-				prefix.push_str(VERTICAL_LINE);
-				prefix.push_str(" ".repeat(SIZE-1).as_str());
-			}
-			else {
-				prefix.push_str(" ".repeat(SIZE).as_str());
-			}
-			self.append_to_string(self.nodes[node].children[i], str, depth+1, if i == 0 {NodePosition::LeftExtreme} else {NodePosition::Left}, prefix);
-			
-			for _ in 0..SIZE {
-				prefix.pop();
-			}
+			self.append_to_string(self.nodes[node].children[i], str, NodePosition::left(i==0), prefix);
+		}
+		for _ in 0..SIZE {
+			prefix.pop();
 		}
 
 		let mut symbol = 
@@ -182,20 +197,19 @@ impl<T> Tree<T> where T : PartialOrd + Display {
 		symbol.push_str(HORIZONTAL_LINE.repeat(SIZE - 1).as_str());
 		str.push_str(format!("\n{prefix}{symbol}{}", self.nodes[node].value).as_str());
 
-
+		
+		if position != NodePosition::RightExtreme && position != NodePosition::Root {
+			prefix.push_str(VERTICAL_LINE);
+			prefix.push_str(" ".repeat(SIZE-1).as_str());
+		}
+		else {
+			prefix.push_str(" ".repeat(SIZE).as_str());
+		}
 		for i in before..self.nodes[node].children.len() {
-			if position != NodePosition::RightExtreme && position != NodePosition::Root {
-				prefix.push_str(VERTICAL_LINE);
-				prefix.push_str(" ".repeat(SIZE-1).as_str());
-			}
-			else {
-				prefix.push_str(" ".repeat(SIZE).as_str());
-			}
-			self.append_to_string(self.nodes[node].children[i], str, depth+1, if i == self.nodes[node].children.len() - 1 {NodePosition::RightExtreme} else {NodePosition::Right}, prefix);
-			
-			for _ in 0..SIZE {
-				prefix.pop();
-			}
+			self.append_to_string(self.nodes[node].children[i], str, NodePosition::right(i == self.nodes[node].children.len() - 1), prefix);
+		}
+		for _ in 0..SIZE {
+			prefix.pop();
 		}
 	}
 }
