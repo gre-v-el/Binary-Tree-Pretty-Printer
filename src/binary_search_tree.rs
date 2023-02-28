@@ -153,6 +153,4 @@ impl<T> BSTree<T> where T : PartialOrd + Display {
 
 		vec.push(self.get_node_value(node).unwrap());
 	}
-
-	// inorder, postorder, inorder -> Vec<T>
 }

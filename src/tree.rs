@@ -142,19 +142,15 @@ impl<T> Tree<T> where T : Display {
 			let mut prefix = "".into();
 			self.vertical_recursive(0, &mut vis, 0, NodePosition::Root, &mut prefix);
 
-			vis = vis.into_iter().map(|s| // TODO: figure out how to not reverse it, but iterate from the end in the loop
-				s.chars().rev().collect()
-			).collect();
-
 			let mut str = String::new();
-
 			
 			let mut all_nones = false;
+			let mut i = 0;
 			while !all_nones {
 				all_nones = true;
 				for c in &mut vis {
-					if let Some(ch) = c.pop() {
-						str.push(ch);
+					if i < c.chars().count() {
+						str.push(c.chars().nth(i).unwrap());
 						all_nones = false;
 					}
 					else {
@@ -162,6 +158,7 @@ impl<T> Tree<T> where T : Display {
 					}
 				}
 				str.push('\n');
+				i += 1;
 			}
 
 			str

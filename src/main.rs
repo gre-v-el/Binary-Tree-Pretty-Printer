@@ -8,8 +8,8 @@ fn main() {
 	for _ in 0..10 {
 		tree.insert(rand::random());
 	}
-	println!("{}", tree.horizontal_string());
-	// println!("{}", tree.vertical_string());
+	// println!("{}", tree.horizontal_string());
+	println!("{}", tree.vertical_string());
 	println!("pre:  {:?}", tree.preorder());
 	println!("in:   {:?}", tree.inorder());
 	println!("post: {:?}", tree.postorder());
