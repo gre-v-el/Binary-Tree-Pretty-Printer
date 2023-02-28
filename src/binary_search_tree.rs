@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use crate::tree::Tree;
 
-pub struct BSTree<T> where T : PartialOrd + Display {
+pub struct BSTree<T> where T : Display {
 	tree: Tree<T>,
 }
 

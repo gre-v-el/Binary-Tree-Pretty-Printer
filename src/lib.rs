@@ -1,5 +1,6 @@
 pub mod binary_search_tree;
 pub mod tree;
+pub mod print_params;
 
 
 const FULL_BOX: [[&str; 3]; 3] = [
