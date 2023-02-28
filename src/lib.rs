@@ -9,3 +9,5 @@ const FULL_BOX: [[&str; 3]; 3] = [
 ];
 const VERTICAL_LINE: &str = "\u{2503}";
 const HORIZONTAL_LINE: &str = "\u{2501}";
+
+// TODO: add *_mut functions

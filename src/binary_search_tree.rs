@@ -76,6 +76,8 @@ impl<T> BSTree<T> where T : PartialOrd + Display {
 		}
 	}
 
+	// TODO: single children are always printed before the parent, regardless of their value
+	// Add some params, including a closure to decide the number of children on each side of a parent
 	pub fn vertical_string(&self) -> String {
 		self.tree.vertical_string()
 	}
@@ -83,6 +85,74 @@ impl<T> BSTree<T> where T : PartialOrd + Display {
 	pub fn horizontal_string(&self) -> String {
 		self.tree.horizontal_string()
 	}
+
+	pub fn preorder(&self) -> Vec<&T> {
+		let mut vec = Vec::new();
+
+		if self.nodes_count() > 0 {
+			self.preorder_traversal(0, &mut vec);
+		}
+
+		vec
+	}
 	
+	fn preorder_traversal<'a>(&'a self, node: usize, vec: &mut Vec<&'a T>) {
+		vec.push(self.get_node_value(node).unwrap());
+
+		for c in self.get_node_children(node).unwrap() {
+			self.preorder_traversal(*c, vec);
+		}
+	}
+
+	pub fn inorder(&self) -> Vec<&T> {
+		let mut vec = Vec::new();
+
+		if self.nodes_count() > 0 {
+			self.inorder_traversal(0, &mut vec);
+		}
+
+		vec
+	}
+	
+	fn inorder_traversal<'a>(&'a self, node: usize, vec: &mut Vec<&'a T>) {
+		let children = self.get_node_children(node).unwrap();
+		let value = self.get_node_value(node).unwrap();
+
+		if children.len() == 2 {
+			self.inorder_traversal(children[0], vec);
+			vec.push(value);
+			self.inorder_traversal(children[1], vec);
+		}
+		else if children.len() == 1 && self.get_node_value(children[0]).unwrap() >= value {
+			vec.push(value);
+			self.inorder_traversal(children[0], vec);
+		}
+		else if children.len() == 1 {
+			self.inorder_traversal(children[0], vec);
+			vec.push(value);
+		}
+		else {
+			vec.push(value);
+		}
+	}
+
+	pub fn postorder(&self) -> Vec<&T> {
+		let mut vec = Vec::new();
+
+		if self.nodes_count() > 0 {
+			self.postorder_traversal(0, &mut vec);
+		}
+
+		vec
+	}
+	
+	fn postorder_traversal<'a>(&'a self, node: usize, vec: &mut Vec<&'a T>) {
+		for c in self.get_node_children(node).unwrap() {
+			self.postorder_traversal(*c, vec);
+		}
+
+		vec.push(self.get_node_value(node).unwrap());
+	}
+
 	// inorder, postorder, inorder -> Vec<T>
 }

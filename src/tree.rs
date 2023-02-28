@@ -4,7 +4,7 @@ use crate::{FULL_BOX, HORIZONTAL_LINE, VERTICAL_LINE};
 
 #[derive(Debug)]
 pub struct NodeIndexError<'a> {
-	thing: &'a str, // TODO: rethink naming
+	object: &'a str,
 	given: usize,
 	allowed: usize,
 }
@@ -12,14 +12,14 @@ pub struct NodeIndexError<'a> {
 impl<'a> NodeIndexError<'a> {
 	pub fn new(thing: &'a str, given: usize, allowed: usize) -> Self {
 		Self {
-			thing, given, allowed
+			object: thing, given, allowed
 		}
 	}
 }
 
 impl<'a> Display for NodeIndexError<'a> {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        Display::fmt(format!("{} index {} outside bounds [0-{})", self.thing, self.given, self.allowed).as_str(), f)
+        Display::fmt(format!("{} index {} outside bounds [0-{})", self.object, self.given, self.allowed).as_str(), f)
 	}
 }
 impl<'a> Error for NodeIndexError<'a> {}
@@ -60,6 +60,7 @@ impl<T> Node<T> {
 	}
 }
 
+// TODO do something with the Display trait (add a to_string closure?)
 pub struct Tree<T> where T : Display {
 	nodes: Vec<Node<T>>,
 }
