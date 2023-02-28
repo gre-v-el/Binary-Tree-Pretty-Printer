@@ -1,6 +1,6 @@
 use std::{fmt::Display, error::Error, mem::replace};
 
-use crate::{FULL_BOX, HORIZONTAL_LINE, VERTICAL_LINE};
+use crate::{print_params::PrintParams};
 
 #[derive(Debug)]
 pub struct NodeIndexError<'a> {
@@ -135,12 +135,12 @@ impl<T> Tree<T> where T : Display {
 		Some(&self.nodes.get(index)?.children)
 	}
 
-	pub fn vertical_string(&self) -> String {
+	pub fn vertical_string(&self, params: &PrintParams<T>) -> String {
 		if self.nodes.len() == 0 { " (empty) ".to_owned() }
 		else {
 			let mut vis = Vec::new();
 			let mut prefix = "".into();
-			self.vertical_recursive(0, &mut vis, 0, NodePosition::Root, &mut prefix);
+			self.vertical_recursive(0, &mut vis, 0, NodePosition::Root, &mut prefix, params);
 
 			let mut str = String::new();
 			
@@ -166,124 +166,132 @@ impl<T> Tree<T> where T : Display {
 
 	}
 
-	fn vertical_recursive(&self, node: usize, visual: &mut Vec<String>, index: usize, position: NodePosition, prefix: &mut String) {
-		const SIZE: usize = 2;
+	fn vertical_recursive(&self, node: usize, visual: &mut Vec<String>, index: usize, position: NodePosition, prefix: &mut String, params: &PrintParams<T>) {
 		
 		let symbol =
 			match position {
-				NodePosition::RightExtreme => FULL_BOX[0][0].to_owned(),
-				NodePosition::LeftExtreme => FULL_BOX[0][2].to_owned(),
-				NodePosition::Root => " ".to_owned(),
-				_ => FULL_BOX[0][1].to_owned(),
+				NodePosition::RightExtreme => params.left_top_corner,
+				NodePosition::LeftExtreme => params.right_top_corner,
+				NodePosition::Root => ' ',
+				_ => params.top_junction,
 			};
 
-		let mut text = format!("<{}>", self.nodes[node].value);
+		let mut text = (*params.convert_to_string)(&self.nodes[node].value);
 		let len = text.len();
 		let left_symbols = len/2;
 		let right_symbols = len-1-left_symbols;
 
 		for _ in 0..right_symbols {
 			if position != NodePosition::LeftExtreme && position != NodePosition::Root {
-				visual.insert(index, format!("{}{}{}{}", prefix, HORIZONTAL_LINE, " ".repeat(SIZE-1), text.pop().unwrap()));
+				visual.insert(index, format!("{}{}{}{}", prefix, params.horizontal_line, " ".repeat(usize::from(params.size)-1), text.pop().unwrap()));
 			}
 			else {
-				visual.insert(index, format!("{}{}{}{}", prefix, " ".repeat(if position == NodePosition::Root {2} else {1}), " ".repeat(if position != NodePosition::Root {SIZE-1} else {0}), text.pop().unwrap()));
+				visual.insert(index, format!("{}{}{}{}", prefix, " ".repeat(if position == NodePosition::Root {2} else {1}), " ".repeat(if position != NodePosition::Root {usize::from(params.size)-1} else {0}), text.pop().unwrap()));
 			}
 		}
-		visual.insert(index, format!("{}{}{}{}", prefix, symbol, VERTICAL_LINE.repeat(SIZE-1), text.pop().unwrap()));
+		let mut lines = String::new();
+		for _ in 0..(usize::from(params.size)-1) {
+			lines.push(params.vertical_line)
+		}
+		visual.insert(index, format!("{}{}{}{}", prefix, symbol, lines, text.pop().unwrap()));
 
 		for _ in 0..left_symbols {
 			if position != NodePosition::RightExtreme && position != NodePosition::Root {
-				visual.insert(index, format!("{}{}{}{}", prefix, HORIZONTAL_LINE, " ".repeat(SIZE-1), text.pop().unwrap()));
+				visual.insert(index, format!("{}{}{}{}", prefix, params.horizontal_line, " ".repeat(usize::from(params.size)-1), text.pop().unwrap()));
 			}
 			else {
-				visual.insert(index, format!("{}{}{}{}", prefix, " ".repeat(if position == NodePosition::Root {2} else {1}), " ".repeat(if position != NodePosition::Root {SIZE-1} else {0}), text.pop().unwrap()));
+				visual.insert(index, format!("{}{}{}{}", prefix, " ".repeat(if position == NodePosition::Root {2} else {1}), " ".repeat(if position != NodePosition::Root {usize::from(params.size)-1} else {0}), text.pop().unwrap()));
 			}
 		}
 
 		let children = self.nodes[node].children.len();
-		let left = children/2;
+		
+		let pass: Vec<&T> = self.get_node_children(node).unwrap().iter().map(|i| self.get_node_value(*i).unwrap()).collect();
+		let left = (*params.split)(self.get_node_value(node).unwrap(), &pass);
 		
 		if position != NodePosition::LeftExtreme && position != NodePosition::Root {
-			prefix.push_str(HORIZONTAL_LINE);
-			prefix.push_str(" ".repeat(SIZE-1).as_str());
+			prefix.push(params.horizontal_line);
+			prefix.push_str(" ".repeat(usize::from(params.size)-1).as_str());
 		}
 		else {
-			prefix.push_str(" ".repeat(SIZE).as_str());
+			prefix.push_str(" ".repeat(usize::from(params.size)).as_str());
 		}
 		for i in 0..left {
-			self.vertical_recursive(self.nodes[node].children[i], visual, index+len, NodePosition::left(i==0), prefix);
+			self.vertical_recursive(self.nodes[node].children[i], visual, index+len, NodePosition::left(i==0), prefix, params);
 		}
-		for _ in 0..SIZE {
+		for _ in 0..usize::from(params.size) {
 			prefix.pop();
 		}
 
 		if position != NodePosition::RightExtreme && position != NodePosition::Root {
-			prefix.push_str(HORIZONTAL_LINE);
-			prefix.push_str(" ".repeat(SIZE-1).as_str());
+			prefix.push(params.horizontal_line);
+			prefix.push_str(" ".repeat(usize::from(params.size)-1).as_str());
 		}
 		else {
-			prefix.push_str(" ".repeat(SIZE).as_str());
+			prefix.push_str(" ".repeat(usize::from(params.size)).as_str());
 		}
 		for i in left..children {
-			self.vertical_recursive(self.nodes[node].children[i], visual, index, NodePosition::right(i==children-1), prefix);
+			self.vertical_recursive(self.nodes[node].children[i], visual, index, NodePosition::right(i==children-1), prefix, params);
 		}
-		for _ in 0..SIZE {
+		for _ in 0..usize::from(params.size) {
 			prefix.pop();
 		}
 	}
 
-	pub fn horizontal_string(&self) -> String {
+	pub fn horizontal_string(&self, params: &PrintParams<T>) -> String {
 		if self.nodes.len() == 0 { "(empty)".into() }
 		else { 
 			let mut prefix = "".into();
 			let mut str = String::new();
-			self.horizontal_recursive(0, &mut str, NodePosition::Root, &mut prefix);
+			self.horizontal_recursive(0, &mut str, NodePosition::Root, &mut prefix, params);
 			str
 		}
 	}
 
-	fn horizontal_recursive(&self, node: usize, str: &mut String, position: NodePosition, prefix: &mut String) {
-		const SIZE: usize = 5;
+	fn horizontal_recursive(&self, node: usize, str: &mut String, position: NodePosition, prefix: &mut String, params: &PrintParams<T>) {
 
-		let before = self.nodes[node].children.len()/2;
+		let children: Vec<&T> = self.get_node_children(node).unwrap().iter().map(|i| self.get_node_value(*i).unwrap()).collect();
+		let before = (*params.split)(self.get_node_value(node).unwrap(), &children);
+		// let before = self.nodes[node].children.len()/2;
 
 		if position != NodePosition::LeftExtreme && position != NodePosition::Root {
-			prefix.push_str(VERTICAL_LINE);
-			prefix.push_str(" ".repeat(SIZE-1).as_str());
+			prefix.push(params.vertical_line);
+			prefix.push_str(" ".repeat(usize::from(params.size)-1).as_str());
 		}
 		else {
-			prefix.push_str(" ".repeat(SIZE).as_str());
+			prefix.push_str(" ".repeat(usize::from(params.size)).as_str());
 		}
 		for i in 0..before {
-			self.horizontal_recursive(self.nodes[node].children[i], str, NodePosition::left(i==0), prefix);
+			self.horizontal_recursive(self.nodes[node].children[i], str, NodePosition::left(i==0), prefix, params);
 		}
-		for _ in 0..SIZE {
+		for _ in 0..usize::from(params.size) {
 			prefix.pop();
 		}
 
-		let mut symbol = 
+		let mut symbol: String = 
 			match position {
-				NodePosition::RightExtreme => FULL_BOX[2][0].to_owned(),
-				NodePosition::LeftExtreme => FULL_BOX[0][0].to_owned(),
-				NodePosition::Root => " ".to_owned(),
-				_ => FULL_BOX[1][0].to_owned(),
+				NodePosition::RightExtreme => params.left_bottom_corner.into(),
+				NodePosition::LeftExtreme => params.left_top_corner.into(),
+				NodePosition::Root => " ".into(),
+				_ => params.left_junction.into(),
 			};
-		symbol.push_str(HORIZONTAL_LINE.repeat(SIZE - 1).as_str());
-		str.push_str(format!("\n{prefix}{symbol}{}", self.nodes[node].value).as_str());
+		for _ in 0..(usize::from(params.size) - 1) {
+			symbol.push(params.horizontal_line);
+		}
+		str.push_str(format!("\n{prefix}{symbol}{}", (*params.convert_to_string)(&self.nodes[node].value)).as_str());
 
 		
 		if position != NodePosition::RightExtreme && position != NodePosition::Root {
-			prefix.push_str(VERTICAL_LINE);
-			prefix.push_str(" ".repeat(SIZE-1).as_str());
+			prefix.push(params.vertical_line);
+			prefix.push_str(" ".repeat(usize::from(params.size)-1).as_str());
 		}
 		else {
-			prefix.push_str(" ".repeat(SIZE).as_str());
+			prefix.push_str(" ".repeat(usize::from(params.size)).as_str());
 		}
 		for i in before..self.nodes[node].children.len() {
-			self.horizontal_recursive(self.nodes[node].children[i], str, NodePosition::right(i == self.nodes[node].children.len() - 1), prefix);
+			self.horizontal_recursive(self.nodes[node].children[i], str, NodePosition::right(i == self.nodes[node].children.len() - 1), prefix, params);
 		}
-		for _ in 0..SIZE {
+		for _ in 0..usize::from(params.size) {
 			prefix.pop();
 		}
 	}

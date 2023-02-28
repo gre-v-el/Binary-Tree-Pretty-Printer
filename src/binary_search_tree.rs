@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::tree::Tree;
+use crate::{tree::Tree, print_params::PrintParams};
 
 pub struct BSTree<T> where T : Display {
 	tree: Tree<T>,
@@ -78,12 +78,12 @@ impl<T> BSTree<T> where T : PartialOrd + Display {
 
 	// TODO: single children are always printed before the parent, regardless of their value
 	// Add some params, including a closure to decide the number of children on each side of a parent
-	pub fn vertical_string(&self) -> String {
-		self.tree.vertical_string()
+	pub fn vertical_string(&self, params: &PrintParams<T>) -> String {
+		self.tree.vertical_string(params)
 	}
 
-	pub fn horizontal_string(&self) -> String {
-		self.tree.horizontal_string()
+	pub fn horizontal_string(&self, params: &PrintParams<T>) -> String {
+		self.tree.horizontal_string(params)
 	}
 
 	pub fn preorder(&self) -> Vec<&T> {
