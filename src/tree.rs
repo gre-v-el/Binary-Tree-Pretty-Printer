@@ -1,6 +1,6 @@
 use std::{fmt::Display, error::Error, mem::replace};
 
-use crate::{print_params::PrintParams};
+use crate::{print_params::PrintParams, VERTICAL_LINE};
 
 #[derive(Debug)]
 pub struct NodeIndexError<'a> {
@@ -167,6 +167,7 @@ impl<T> Tree<T> where T : Display {
 	}
 
 	fn vertical_recursive(&self, node: usize, visual: &mut Vec<String>, index: usize, position: NodePosition, prefix: &mut String, params: &PrintParams<T>) {
+		let children: Vec<&T> = self.get_node_children(node).unwrap().iter().map(|i| self.get_node_value(*i).unwrap()).collect();
 		
 		let symbol =
 			match position {
@@ -176,7 +177,7 @@ impl<T> Tree<T> where T : Display {
 				_ => params.top_junction,
 			};
 
-		let mut text = (*params.convert_to_string)(&self.nodes[node].value);
+		let mut text = (*params.convert_to_string)(&self.nodes[node].value, &children);
 		let len = text.len();
 		let left_symbols = len/2;
 		let right_symbols = len-1-left_symbols;
@@ -252,7 +253,6 @@ impl<T> Tree<T> where T : Display {
 
 		let children: Vec<&T> = self.get_node_children(node).unwrap().iter().map(|i| self.get_node_value(*i).unwrap()).collect();
 		let before = (*params.split)(self.get_node_value(node).unwrap(), &children);
-		// let before = self.nodes[node].children.len()/2;
 
 		if position != NodePosition::LeftExtreme && position != NodePosition::Root {
 			prefix.push(params.vertical_line);
@@ -268,6 +268,9 @@ impl<T> Tree<T> where T : Display {
 			prefix.pop();
 		}
 
+		let text = (params.convert_to_string)(&self.nodes[node].value, &children);
+		let mut lines = text.split('\n').rev().collect::<Vec<_>>();
+
 		let mut symbol: String = 
 			match position {
 				NodePosition::RightExtreme => params.left_bottom_corner.into(),
@@ -278,7 +281,11 @@ impl<T> Tree<T> where T : Display {
 		for _ in 0..(usize::from(params.size) - 1) {
 			symbol.push(params.horizontal_line);
 		}
-		str.push_str(format!("\n{prefix}{symbol}{}", (*params.convert_to_string)(&self.nodes[node].value)).as_str());
+		str.push_str(format!("\n{prefix}{symbol}{}", lines.pop().unwrap()).as_str());
+		while let Some(s) = lines.pop() {
+			let line = if position != NodePosition::RightExtreme && position != NodePosition::Root {VERTICAL_LINE} else {' '};
+			str.push_str(format!("\n{prefix}{}{}{}", line, " ".repeat(usize::from(params.size) - 1), s).as_str());
+		}
 
 		
 		if position != NodePosition::RightExtreme && position != NodePosition::Root {

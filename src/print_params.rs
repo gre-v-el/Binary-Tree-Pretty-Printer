@@ -3,7 +3,7 @@ use std::{num::NonZeroUsize, fmt::Debug};
 use crate::{VERTICAL_LINE, HORIZONTAL_LINE, FULL_BOX};
 
 pub struct PrintParams<T> {
-	pub convert_to_string: Box<dyn Fn(&T) -> String>, // item -> string
+	pub convert_to_string: Box<dyn Fn(&T, &[&T]) -> String>, // item -> string
 	pub split: Box<dyn Fn(&T, &[&T]) -> usize>, // value, children -> nodes_to_the_left
 	pub size: NonZeroUsize,
 	pub vertical_line: char,
@@ -18,7 +18,7 @@ pub struct PrintParams<T> {
 impl<T> Default for PrintParams<T> where T : Debug {
 	fn default() -> Self {
 		Self {
-			convert_to_string: Box::new(|v| { format!("<{:?}>", v) }),
+			convert_to_string: Box::new(|v, _| { format!("<{:?}>", v) }),
 			split: Box::new(|_, children| { children.len()/2 }),
 			size: NonZeroUsize::new(2).unwrap(),
 			vertical_line: VERTICAL_LINE,
