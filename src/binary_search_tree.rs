@@ -1,12 +1,12 @@
-use std::fmt::Display;
+use std::fmt::Debug;
 
 use crate::{tree::Tree, print_params::PrintParams};
 
-pub struct BSTree<T> where T : Display {
+pub struct BSTree<T> where T : Debug {
 	tree: Tree<T>,
 }
 
-impl<T> BSTree<T> where T : PartialOrd + Display {
+impl<T> BSTree<T> where T : PartialOrd + Debug {
 	pub fn new() -> Self {
 		Self{
 			tree: Tree::new(),

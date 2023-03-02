@@ -1,4 +1,4 @@
-use std::{fmt::Display, error::Error, mem::replace};
+use std::{fmt::{Display, Debug}, error::Error, mem::replace};
 
 use crate::{print_params::PrintParams, VERTICAL_LINE};
 
@@ -61,11 +61,11 @@ impl<T> Node<T> {
 }
 
 // TODO do something with the Display trait (add a to_string closure?)
-pub struct Tree<T> where T : Display {
+pub struct Tree<T> where T : Debug {
 	nodes: Vec<Node<T>>,
 }
 
-impl<T> Tree<T> where T : Display {
+impl<T> Tree<T> where T : Debug {
 	pub fn new() -> Self {
 		Self{
 			nodes: Vec::new(),
@@ -177,31 +177,40 @@ impl<T> Tree<T> where T : Display {
 				_ => params.top_junction,
 			};
 
-		let mut text = (*params.convert_to_string)(&self.nodes[node].value, &children);
-		let len = text.len();
+		let text = (params.convert_to_string)(&self.nodes[node].value, &children);
+		let lines = text.split('\n').collect::<Vec<_>>();
+		let mut vertical_strings = Vec::new();
+		for i in 0..lines[0].chars().count() {
+			let mut string = String::new();
+			for s in &lines {
+				string.push(s.chars().nth(i).unwrap());
+			}
+			vertical_strings.push(string);
+		}
+		let len = vertical_strings.len();
 		let left_symbols = len/2;
 		let right_symbols = len-1-left_symbols;
 
 		for _ in 0..right_symbols {
 			if position != NodePosition::LeftExtreme && position != NodePosition::Root {
-				visual.insert(index, format!("{}{}{}{}", prefix, params.horizontal_line, " ".repeat(usize::from(params.size)-1), text.pop().unwrap()));
+				visual.insert(index, format!("{}{}{}{}", prefix, params.horizontal_line, " ".repeat(usize::from(params.size)-1), vertical_strings.pop().unwrap()));
 			}
 			else {
-				visual.insert(index, format!("{}{}{}{}", prefix, " ".repeat(if position == NodePosition::Root {2} else {1}), " ".repeat(if position != NodePosition::Root {usize::from(params.size)-1} else {0}), text.pop().unwrap()));
+				visual.insert(index, format!("{}{}{}{}", prefix, " ".repeat(if position == NodePosition::Root {params.size.into()} else {1}), " ".repeat(if position != NodePosition::Root {usize::from(params.size)-1} else {0}), vertical_strings.pop().unwrap()));
 			}
 		}
 		let mut lines = String::new();
 		for _ in 0..(usize::from(params.size)-1) {
 			lines.push(params.vertical_line)
 		}
-		visual.insert(index, format!("{}{}{}{}", prefix, symbol, lines, text.pop().unwrap()));
+		visual.insert(index, format!("{}{}{}{}", prefix, symbol, lines, vertical_strings.pop().unwrap()));
 
 		for _ in 0..left_symbols {
 			if position != NodePosition::RightExtreme && position != NodePosition::Root {
-				visual.insert(index, format!("{}{}{}{}", prefix, params.horizontal_line, " ".repeat(usize::from(params.size)-1), text.pop().unwrap()));
+				visual.insert(index, format!("{}{}{}{}", prefix, params.horizontal_line, " ".repeat(usize::from(params.size)-1), vertical_strings.pop().unwrap()));
 			}
 			else {
-				visual.insert(index, format!("{}{}{}{}", prefix, " ".repeat(if position == NodePosition::Root {2} else {1}), " ".repeat(if position != NodePosition::Root {usize::from(params.size)-1} else {0}), text.pop().unwrap()));
+				visual.insert(index, format!("{}{}{}{}", prefix, " ".repeat(if position == NodePosition::Root {params.size.into()} else {1}), " ".repeat(if position != NodePosition::Root {usize::from(params.size)-1} else {0}), vertical_strings.pop().unwrap()));
 			}
 		}
 
@@ -286,6 +295,7 @@ impl<T> Tree<T> where T : Display {
 			let line = if position != NodePosition::RightExtreme && position != NodePosition::Root {VERTICAL_LINE} else {' '};
 			str.push_str(format!("\n{prefix}{}{}{}", line, " ".repeat(usize::from(params.size) - 1), s).as_str());
 		}
+		// str.push_str(format!("\n{prefix}{}", params.vertical_line).as_str());
 
 		
 		if position != NodePosition::RightExtreme && position != NodePosition::Root {
